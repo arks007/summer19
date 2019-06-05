@@ -8,8 +8,6 @@ random function generator adopted from: http://www.cs.utsa.edu/~wagner/CS2073/ra
 #include <stdlib.h>
 #include <time.h>
 
-/* line added*/
-int test;
 
 /* A struct that represents the Neurons within a neural network */
 typedef struct{ 
@@ -187,7 +185,7 @@ void modelInfo(neuralNet* model){
 
 
 /* A function that performs a feedforward operation, returns 1 if the operation can be performed again 0 otherwise */
-int feedForward(Neuron* currentLayer, Neuron* nextLayer){
+int feedForward(neuralLayer* currentLayer){
  
 }
 
