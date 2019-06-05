@@ -182,7 +182,6 @@ void modelInfo(neuralNet* model){
     }
     printf("\n");
 }
-int test;
 
 /* A function that performs a feedforward operation, returns 1 if the operation can be performed again 0 otherwise */
 int feedForward(neuralLayer* currentLayer){
