@@ -185,8 +185,33 @@ void modelInfo(neuralNet* model){
 
 
 /* A function that performs a feedforward operation, returns 1 if the operation can be performed again 0 otherwise */
-int feedForward(neuralLayer* currentLayer){
- 
+void feedForwardHelper(neuralLayer* currentLayer){
+    neuralLayer* tempNextLayerPtr = currentLayer -> nextLayer;
+    Neuron* tempCurrentLayerNeuron = currentLayer -> layerPtr;
+    Neuron* tempNextLayerNeuron = tempNextLayerPtr -> layerPtr; 
+    float* weightPtr = tempCurrentLayerNeuron -> weightsPtr;
+    printf("completed initialization");
+    for(int i = 0; i < currentLayer -> numNeurons; i++){
+        for(int j = 0; j < tempNextLayerPtr -> numNeurons; j++){
+            //printf("%d, %d", i ,j);
+            tempNextLayerNeuron -> value += *weightPtr * (tempCurrentLayerNeuron -> value);
+            weightPtr++;
+            tempNextLayerNeuron++;
+
+            if(j == tempNextLayerPtr -> numNeurons - 1){
+                tempNextLayerNeuron -> value = sigmoid(tempNextLayerNeuron -> value + tempNextLayerNeuron -> bias);
+            }
+        }
+        tempCurrentLayerNeuron++;
+    }
+}
+
+void feedForward(neuralNet* model){
+    neuralLayer* tempLayer = model -> inputLayer;
+    for(int i = 0; i < model -> numHiddenLayers; i++){
+        feedForwardHelper(tempLayer);
+        tempLayer = tempLayer -> nextLayer;
+    }
 }
 
 
@@ -208,6 +233,12 @@ int main(){
     neuralNet* testModel = generateNNModel(10, 5, 5, 2);
 
     /* Print a model summary */
+    modelInfo(testModel);
+
+    /*run feed forward*/
+    feedForward(testModel);
+
+    /*check changes*/
     modelInfo(testModel);
 }
 
