@@ -10,7 +10,7 @@ random function generator adopted from: http://www.cs.utsa.edu/~wagner/CS2073/ra
 
 
 /* A struct that represents the Neurons within a neural network */
-typedef struct{ 
+typedef struct Neuron{ 
     float value;                  // the value of a Neuron struct  
     float* weightsPtr;            // a pointer to a float array of weights corresponding to each next neuron 
     float bias;                   // the bias of a node 
@@ -20,7 +20,7 @@ typedef struct{
 
 /* A struct that contains a pointer to a contiguous block of Neuron structs in memory */
 /* Will be used to make interfacing layers of Neurons easier */
-typedef struct{
+typedef struct neuralLayer{
     Neuron* layerPtr;
     int numNeurons;
     struct neuralLayer* prevLayer;
@@ -28,7 +28,7 @@ typedef struct{
 } neuralLayer; 
 
 /* A struct that encapsulates an entire Neural Network model */
-typedef struct {
+typedef struct neuralNet{
     neuralLayer* inputLayer;
     int numInputNeurons;
     int numHiddenLayers;
@@ -70,7 +70,7 @@ void weightInitialization(float* iterator, int numNeuronsPerLayer){
 /* A function that simplifies the process of making Neuron layers */
 /* After this function is executed, a pointer pointing to a neuralLayer struct will be returned */
 neuralLayer* layerInitialization(int numNeurons, int numNeuronsNextLayer){
-    Neuron* LayerPtr = (Neuron*)malloc(sizeof(Neuron) * numNeurons);
+    Neuron* LayerPtr = malloc(sizeof(Neuron) * numNeurons);
     Neuron* tempPtr = LayerPtr; //temp pointer to iterate through the new block of Neurons 
     //initialize the input layer structs 
     for(int i = 0; i < numNeurons; i++){
@@ -81,7 +81,7 @@ neuralLayer* layerInitialization(int numNeurons, int numNeuronsNextLayer){
             tempPtr -> bias = 0;
         }
         else{
-            tempPtr -> weightsPtr = (float*)malloc(sizeof(float) * numNeuronsNextLayer);
+            tempPtr -> weightsPtr = malloc(sizeof(float) * numNeuronsNextLayer);
             //initialize the weights 
             float* tempWeightsPtr = tempPtr -> weightsPtr;
             weightInitialization(tempWeightsPtr, numNeuronsNextLayer);
@@ -91,7 +91,7 @@ neuralLayer* layerInitialization(int numNeurons, int numNeuronsNextLayer){
     }
 
     /* Fill in the paramters of the layer struct */
-    neuralLayer* Layer = (neuralLayer*)malloc(sizeof(neuralLayer));
+    neuralLayer* Layer = malloc(sizeof(neuralLayer));
     Layer -> layerPtr = LayerPtr;
     Layer -> numNeurons = numNeurons;
     Layer -> prevLayer = NULL; 
@@ -153,7 +153,7 @@ void modelInfo(neuralNet* model){
     Neuron* neuronPtr = layerPointer -> layerPtr;
     printf("Input layer details:\n");
     for(int i = 0; i < model -> numInputNeurons; i++){
-        printf("Input Neuron %d: value: %f | bias: %f | ", i, neuronPtr -> value, neuronPtr -> bias);
+        printf("Input Neuron %d: value: %5.2f | bias: %5.2f | ", i, neuronPtr -> value, neuronPtr -> bias);
         printWeights(neuronPtr -> weightsPtr, model -> numNeuronsPerHiddenLayer);
         neuronPtr++;
     }
@@ -166,7 +166,7 @@ void modelInfo(neuralNet* model){
         neuronPtr = layerPointer -> layerPtr;
         neuralLayer* nextLayerPtr = layerPointer -> nextLayer;
         for(int j = 0; j < layerPointer -> numNeurons; j++){
-            printf("Hidden Neuron %d: value: %f | bias: %f | ", j, neuronPtr -> value, neuronPtr -> bias);
+            printf("Hidden Neuron %d: value: %5.2f | bias: %5.2f | ", j, neuronPtr -> value, neuronPtr -> bias);
             printWeights(neuronPtr -> weightsPtr, (nextLayerPtr -> numNeurons));
             neuronPtr++;
         }
@@ -186,31 +186,25 @@ void modelInfo(neuralNet* model){
 
 /* A function that performs a feedforward operation, returns 1 if the operation can be performed again 0 otherwise */
 void feedForwardHelper(neuralLayer* currentLayer){
-    neuralLayer* tempNextLayerPtr = currentLayer -> nextLayer;
-    Neuron* tempCurrentLayerNeuron = currentLayer -> layerPtr;
-    Neuron* tempNextLayerNeuron = tempNextLayerPtr -> layerPtr; 
-    float* weightPtr = tempCurrentLayerNeuron -> weightsPtr;
-    printf("completed initialization");
+    Neuron* currentNeuron = currentLayer -> layerPtr;
+    Neuron* nextLayerNeuron = currentLayer -> nextLayer -> layerPtr;
     for(int i = 0; i < currentLayer -> numNeurons; i++){
-        for(int j = 0; j < tempNextLayerPtr -> numNeurons; j++){
-            //printf("%d, %d", i ,j);
-            tempNextLayerNeuron -> value += *weightPtr * (tempCurrentLayerNeuron -> value);
-            weightPtr++;
-            tempNextLayerNeuron++;
+        float* weightPtr = currentNeuron -> weightsPtr;
+        for(int j = 0; j < currentLayer -> nextLayer -> numNeurons; j++){
+            nextLayerNeuron[j].value = weightPtr[j] * currentNeuron[i].value;
 
-            if(j == tempNextLayerPtr -> numNeurons - 1){
-                tempNextLayerNeuron -> value = sigmoid(tempNextLayerNeuron -> value + tempNextLayerNeuron -> bias);
+            if(j == currentLayer -> nextLayer -> numNeurons - 1){
+                nextLayerNeuron[j].value = sigmoid(nextLayerNeuron[j].value + nextLayerNeuron[j].bias);
             }
         }
-        tempCurrentLayerNeuron++;
     }
 }
 
 void feedForward(neuralNet* model){
-    neuralLayer* tempLayer = model -> inputLayer;
-    for(int i = 0; i < model -> numHiddenLayers; i++){
-        feedForwardHelper(tempLayer);
-        tempLayer = tempLayer -> nextLayer;
+    neuralLayer* currentLayer = model -> inputLayer;
+    for(int i = 0; i < model -> numHiddenLayers + 1; i++){
+        feedForwardHelper(currentLayer);
+        currentLayer = currentLayer -> nextLayer;
     }
 }
 
@@ -220,6 +214,8 @@ int main(){
 
     /* Print the size of the Neuron struct */
     printf("The size of a Neuron is %ld bytes. \n", sizeof(Neuron));
+    printf("The size of a neuralLayer is %ld bytes. \n", sizeof(neuralLayer));
+    printf("The size of a neuralNet is %ld bytes. \n", sizeof(neuralNet));
     
     /* Testing the sigmoid function */
     for(int i = -10; i < 11; i++){
@@ -230,13 +226,14 @@ int main(){
     printf("test %f \n\n" , randDouble2(-1, 1));
 
     /* Generate a model */
-    neuralNet* testModel = generateNNModel(10, 5, 5, 2);
+    neuralNet* testModel = generateNNModel(20, 50, 50, 20);
 
     /* Print a model summary */
     modelInfo(testModel);
 
     /*run feed forward*/
     feedForward(testModel);
+    printf("\n\n");
 
     /*check changes*/
     modelInfo(testModel);
