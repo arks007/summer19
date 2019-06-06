@@ -8,7 +8,6 @@ random function generator adopted from: http://www.cs.utsa.edu/~wagner/CS2073/ra
 #include <stdlib.h>
 #include <time.h>
 
-
 /* A struct that represents the Neurons within a neural network */
 typedef struct Neuron{ 
     float value;                  // the value of a Neuron struct  
@@ -36,7 +35,6 @@ typedef struct neuralNet{
     int numOutputNeurons;
 } neuralNet;
 
-
 /* A function that returns the value of a sigmoid function at a particular x-value */ 
 float sigmoid(float x){
     return 1/(1 + exp(-x));
@@ -48,7 +46,6 @@ float normalize(float x, float xMin, float xMax){
 }
 
 
-
 double randDouble() {
    return rand()/(double)RAND_MAX;
 }
@@ -56,8 +53,7 @@ double randDouble() {
 double randDouble2(double x, double y) {
    return (y - x)*randDouble() + x;
 }
-
-  
+ 
 void weightInitialization(float* iterator, int numNeuronsPerLayer){
     //printf("Weights: ");
     for(int i = 0; i < numNeuronsPerLayer; i++){
@@ -99,7 +95,6 @@ neuralLayer* layerInitialization(int numNeurons, int numNeuronsNextLayer){
     return Layer;
 }
 
-
 /* A function that will return a pointer to a block of input Neuron structs */
 neuralNet* generateNNModel(int numInputNeurons, int numHiddenLayers, int numHiddenNeuronsPerLayer, int numOutputNeurons){
     /* 1. Create the structure of a Neural Network */
@@ -127,7 +122,7 @@ neuralNet* generateNNModel(int numInputNeurons, int numHiddenLayers, int numHidd
     layerIterator -> nextLayer = outputLayer;
     outputLayer -> prevLayer = layerIterator;
 
-    neuralNet* model = (neuralNet*)malloc(sizeof(neuralNet));
+    neuralNet* model = malloc(sizeof(neuralNet));
     model -> inputLayer = inputLayer; 
     model -> numInputNeurons = numInputNeurons;
     model -> numHiddenLayers = numHiddenLayers;
@@ -207,34 +202,27 @@ void feedForward(neuralNet* model){
     }
 }
 
-
-int main(){
+int main(int argc, char* argv[]){
+    /* initialize the rand functions */
     srand((long)time(NULL));
-
-    /* Print the size of the Neuron struct */
-    printf("The size of a Neuron is %ld bytes. \n", sizeof(Neuron));
-    printf("The size of a neuralLayer is %ld bytes. \n", sizeof(neuralLayer));
-    printf("The size of a neuralNet is %ld bytes. \n", sizeof(neuralNet));
     
-    /* Testing the sigmoid function */
-    for(int i = -10; i < 11; i++){
-        printf("sigmoid(%d) = %f\n", i, sigmoid((float)i));
-    }
-
-    /* Test the random number generator */
-    printf("test %f \n\n" , randDouble2(-1, 1));
-
     /* Generate a model */
-    neuralNet* testModel = generateNNModel(20, 50, 50, 20);
-
-    /* Print a model summary */
-    modelInfo(testModel);
-
+    double timeElapsed = 0.0;
+    clock_t start = clock();
+    neuralNet* testModel = generateNNModel(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
+    clock_t end = clock();
+    
     /*run feed forward*/
     feedForward(testModel);
-    printf("\n\n");
+    
+    timeElapsed += (double)(end - start)/CLOCKS_PER_SEC;
+    printf("Time elapsed is %f seconds \n", timeElapsed);
 
     /*check changes*/
-    modelInfo(testModel);
+    if(atoi(argv[5]) == 1){
+        modelInfo(testModel);
+    }
+    
+    return 0;
 }
 
