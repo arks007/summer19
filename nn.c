@@ -13,8 +13,6 @@ typedef struct Neuron{
     float value;                  // the value of a Neuron struct  
     float* weightsPtr;            // a pointer to a float array of weights corresponding to each next neuron 
     float bias;                   // the bias of a node 
-    //struct Neuron* prevNeurons; // a pointer to a malloc-ed region of memory with the prev Neurons
-    //struct Neuron* nextNeurons; // a pointer to a malloc-ed region of memory with the next Neurons
 } Neuron;
 
 /* A struct that contains a pointer to a contiguous block of Neuron structs in memory */
@@ -186,11 +184,11 @@ void feedForwardHelper(neuralLayer* currentLayer){
         float* weightPtr = currentNeuron -> weightsPtr;
         for(int j = 0; j < currentLayer -> nextLayer -> numNeurons; j++){
             nextLayerNeuron[j].value = weightPtr[j] * currentNeuron[i].value;
-
-            if(j == currentLayer -> nextLayer -> numNeurons - 1){
-                nextLayerNeuron[j].value = sigmoid(nextLayerNeuron[j].value + nextLayerNeuron[j].bias);
-            }
         }
+    }
+    
+    for(int k = 0; k < currentLayer -> nextLayer -> numNeurons; k++){
+        nextLayerNeuron[k].value = sigmoid(nextLayerNeuron[k].value + nextLayerNeuron[k].bias);
     }
 }
 
@@ -202,6 +200,26 @@ void feedForward(neuralNet* model){
     }
 }
 
+int readInputValues(char arr[], neuralNet* model){
+    FILE* fpointer;
+    fpointer = fopen(arr, "r");
+    char line[10];
+    
+    Neuron* currentNeuron = model -> inputLayer ->layerPtr;
+
+    int i = 0;
+    while(fgets(line, 10, fpointer) != NULL){
+        puts(line);
+        currentNeuron[i].value = atof(line); 
+        i++;
+    }
+
+    fclose(fpointer);
+    return i;
+}
+
+
+
 int main(int argc, char* argv[]){
     /* initialize the rand functions */
     srand((long)time(NULL));
@@ -209,9 +227,15 @@ int main(int argc, char* argv[]){
     /* Generate a model */
     double timeElapsed = 0.0;
     clock_t start = clock();
-    neuralNet* testModel = generateNNModel(atoi(argv[1]), atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
+    neuralNet* testModel = generateNNModel(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));
     clock_t end = clock();
     
+    /* Load input values for the neural network */
+    int numValsRead = readInputValues(argv[1], testModel); 
+    if(numValsRead != testModel -> numInputNeurons){
+        printf("!!!WARNING: ERROR IN READING IN VALUES!!!");
+    }
+
     /*run feed forward*/
     feedForward(testModel);
     
@@ -219,10 +243,11 @@ int main(int argc, char* argv[]){
     printf("Time elapsed is %f seconds \n", timeElapsed);
 
     /*check changes*/
-    if(atoi(argv[5]) == 1){
+    if(atoi(argv[6]) == 1){
         modelInfo(testModel);
     }
-    
+
+       
     return 0;
 }
 
