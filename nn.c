@@ -12,7 +12,6 @@ random function generator adopted from: http://www.cs.utsa.edu/~wagner/CS2073/ra
 typedef struct Neuron{ 
     float value;                  // the value of a Neuron struct  
     float* weightsPtr;            // a pointer to a float array of weights corresponding to each next neuron 
-    float bias;                   // the bias of a node 
 } Neuron;
 
 /* A struct that contains a pointer to a contiguous block of Neuron structs in memory */
@@ -20,6 +19,7 @@ typedef struct Neuron{
 typedef struct neuralLayer{
     Neuron* layerPtr;
     int numNeurons;
+    float bias;                   // the bias of a node 
     struct neuralLayer* prevLayer;
     struct neuralLayer* nextLayer;
 } neuralLayer; 
@@ -55,7 +55,8 @@ double randDouble2(double x, double y) {
 void weightInitialization(float* iterator, int numNeuronsPerLayer){
     //printf("Weights: ");
     for(int i = 0; i < numNeuronsPerLayer; i++){
-        *iterator = randDouble2(-1, 1); //initialize the weight b/w -1 and 1
+        //*iterator = randDouble2(-1, 1); //initialize the weight b/w -1 and 1
+        *iterator = .1;
         //printf("%f ", *iterator);
         iterator++;
     }
@@ -72,14 +73,12 @@ neuralLayer* layerInitialization(int numNeurons, int numNeuronsNextLayer){
         //if @ output layer 
         if(numNeuronsNextLayer == 0){
             tempPtr -> weightsPtr = NULL;
-            tempPtr -> bias = 0;
         }
         else{
             tempPtr -> weightsPtr = malloc(sizeof(float) * numNeuronsNextLayer);
             //initialize the weights 
             float* tempWeightsPtr = tempPtr -> weightsPtr;
             weightInitialization(tempWeightsPtr, numNeuronsNextLayer);
-            tempPtr -> bias = 0;
         }
     tempPtr++; // point to the next struct and repeat 
     }
@@ -88,6 +87,7 @@ neuralLayer* layerInitialization(int numNeurons, int numNeuronsNextLayer){
     neuralLayer* Layer = malloc(sizeof(neuralLayer));
     Layer -> layerPtr = LayerPtr;
     Layer -> numNeurons = numNeurons;
+    Layer -> bias = .2;
     Layer -> prevLayer = NULL; 
     Layer -> nextLayer = NULL;   
     return Layer;
@@ -146,7 +146,7 @@ void modelInfo(neuralNet* model){
     Neuron* neuronPtr = layerPointer -> layerPtr;
     printf("Input layer details:\n");
     for(int i = 0; i < model -> numInputNeurons; i++){
-        printf("Input Neuron %d: value: %5.2f | bias: %5.2f | ", i, neuronPtr -> value, neuronPtr -> bias);
+        printf("Input Neuron %d: value: %5.2f | ", i, neuronPtr -> value);
         printWeights(neuronPtr -> weightsPtr, model -> numNeuronsPerHiddenLayer);
         neuronPtr++;
     }
@@ -159,10 +159,11 @@ void modelInfo(neuralNet* model){
         neuronPtr = layerPointer -> layerPtr;
         neuralLayer* nextLayerPtr = layerPointer -> nextLayer;
         for(int j = 0; j < layerPointer -> numNeurons; j++){
-            printf("Hidden Neuron %d: value: %5.2f | bias: %5.2f | ", j, neuronPtr -> value, neuronPtr -> bias);
+            printf("Hidden Neuron %d: value: %5.2f | ", j, neuronPtr -> value);
             printWeights(neuronPtr -> weightsPtr, (nextLayerPtr -> numNeurons));
             neuronPtr++;
         }
+        printf("Layer bias: %5.2f\n", layerPointer -> bias);
         printf("\n");
         layerPointer = layerPointer -> nextLayer;
     }
@@ -170,9 +171,11 @@ void modelInfo(neuralNet* model){
     /* print out the values of the output neurons */
     neuronPtr = layerPointer -> layerPtr;
     for(int i = 0; i < layerPointer -> numNeurons; i++){
+        printf("Output layer details:\n");
         printf("Output neuron %d value: %5.2f\n", i, neuronPtr -> value);
         neuronPtr++;
     }
+    printf("Layer bias: %5.2f\n", layerPointer -> bias);
     printf("\n");
 }
 
@@ -183,12 +186,12 @@ void feedForwardHelper(neuralLayer* currentLayer){
     for(int i = 0; i < currentLayer -> numNeurons; i++){
         float* weightPtr = currentNeuron -> weightsPtr;
         for(int j = 0; j < currentLayer -> nextLayer -> numNeurons; j++){
-            nextLayerNeuron[j].value = weightPtr[j] * currentNeuron[i].value;
+            nextLayerNeuron[j].value += weightPtr[j] * currentNeuron[i].value;
         }
     }
-    
+
     for(int k = 0; k < currentLayer -> nextLayer -> numNeurons; k++){
-        nextLayerNeuron[k].value = sigmoid(nextLayerNeuron[k].value + nextLayerNeuron[k].bias);
+        nextLayerNeuron[k].value = sigmoid(nextLayerNeuron[k].value + (currentLayer -> nextLayer -> bias));
     }
 }
 
